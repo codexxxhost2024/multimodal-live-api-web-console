@@ -122,8 +122,10 @@ export class MultimodalLiveClient extends EventEmitter<MultimodalLiveClientEvent
 
         this.ws = ws;
 
+        // Include the system prompt in the setup message if provided
         const setupMessage: SetupMessage = {
           setup: this.config,
+          systemPrompt: this.config.systemPrompt || "You are an assistant of Master E and speak in Taglish or Tagalog English mix.", // Include the system prompt here
         };
         this._sendDirect(setupMessage);
         this.log("client.send", "setup");
@@ -256,7 +258,7 @@ export class MultimodalLiveClient extends EventEmitter<MultimodalLiveClientEvent
       }
     }
     const message =
-      hasAudio && hasVideo
+      hasAudio and hasVideo
         ? "audio + video"
         : hasAudio
           ? "audio"
