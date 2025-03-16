@@ -39,14 +39,15 @@ export type LiveConfig = {
   systemInstruction?: { parts: Part[] };
   generationConfig?: Partial<LiveGenerationConfig>;
   tools?: Array<Tool | { googleSearch: {} } | { codeExecution: {} }>;
+  systemPrompt?: string;
 };
 
 export type LiveGenerationConfig = GenerationConfig & {
   responseModalities: "text" | "audio" | "image";
   speechConfig?: {
     voiceConfig?: {
-      prebuiltVoiceConfig?: {
-        voiceName: "Puck" | "Charon" | "Kore" | "Fenrir" | "Aoede" | string;
+      prebuiltVoiceConfig: {
+        voiceName: "Charon";
       };
     };
   };
@@ -63,7 +64,6 @@ export type LiveOutgoingMessage =
  */
 export type SetupMessage = {
   setup: LiveConfig;
-  systemPrompt?: string; // <-- Added systemPrompt here
 };
 
 export type ClientContentMessage = {

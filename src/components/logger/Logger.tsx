@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
+import { db, collection, addDoc } from "../../firebaseConfig";
 import "./logger.scss";
 
 import { Part } from "@google/generative-ai";
 import cn from "classnames";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useLoggerStore } from "../../lib/store-logger";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { vs2015 as dark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import {
   ClientContentMessage,
+  StreamingLog,
   isClientContentMessage,
   isInterrupted,
   isModelTurn,
@@ -34,7 +36,6 @@ import {
   isTurnComplete,
   ModelTurn,
   ServerContentMessage,
-  StreamingLog,
   ToolCallCancellationMessage,
   ToolCallMessage,
   ToolResponseMessage,
@@ -254,10 +255,42 @@ const component = (log: StreamingLog) => {
   return AnyMessage;
 };
 
+const saveConversation = async (userText: string, botResponse: string) => {
+  try {
+    const conversationsCollection = collection(db, "conversations");
+    await addDoc(conversationsCollection, {
+      userText: userText,
+      botResponse: botResponse,
+      timestamp: new Date(),
+    });
+    console.log("Conversation saved to Firestore!");
+  } catch (error) {
+    console.error("Error saving conversation to Firestore:", error);
+  }
+};
+
 export default function Logger({ filter = "none" }: LoggerProps) {
   const { logs } = useLoggerStore();
 
   const filterFn = filters[filter];
+
+  useEffect(() => {
+    if (logs.length > 0) {
+      const lastLog = logs[logs.length - 1];
+      if (lastLog.type === "clientContent.send" && isClientContentMessage(lastLog.message)) {
+        const userText = lastLog.message.clientContent.turns[0].parts.map(part => part.text).join("");
+
+        const botResponseLog = logs.find(log => log.type === "serverContent.receive" && isServerContentMessage(log.message));
+        if (botResponseLog) {
+          const serverContent = botResponseLog.message.serverContent;
+          if (isModelTurn(serverContent)) {
+            const botResponse = serverContent.modelTurn.parts.map(part => part.text).join("");
+            saveConversation(userText, botResponse);
+          }
+        }
+      }
+    }
+  }, [logs]);
 
   return (
     <div className="logger">
